@@ -1,0 +1,37 @@
+---
+
+language: python
+python: "2.7"
+
+sudo: required
+
+# Enable the docker service
+services:
+  - docker
+
+env:
+  # Use the docker driver for tests
+  global:
+    - MOLECULE_DRIVER_NAME=docker
+  # Enable matrix builds
+  matrix:
+    - MOLECULE_TARGET_DISTRO=centos
+    - MOLECULE_TARGET_DISTRO=ubuntu
+
+# Replace aufs with the vfs docker storage driver
+# to prevent systemd to fail starting docker in docker.
+before_install:
+  - sudo sed -i 's|DOCKER_OPTS=.*|DOCKER_OPTS="-H tcp://127.0.0.1:2375 -H unix:///var/run/docker.sock --storage-driver vfs"|g' /etc/default/docker
+  - sudo service docker restart
+  - docker info
+
+# Install molecule
+install:
+  - pip install -r test-requirements.txt
+
+# Tests all the scenarios
+script:
+  - molecule test
+
+notifications:
+  webhooks: https://galaxy.ansible.com/api/v1/notifications/
